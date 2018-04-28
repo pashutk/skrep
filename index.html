@@ -1,0 +1,157 @@
+
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>three.js webgl - loaders - OBJ loader</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<style>
+			body {
+				font-family: Monospace;
+				background-color: #000;
+				color: #fff;
+				margin: 0px;
+				overflow: hidden;
+			}
+		</style>
+	</head>
+
+	<body>
+
+		<script src="https://threejs.org/build/three.js"></script>
+		<script src="https://threejs.org/examples/js/loaders/OBJLoader.js"></script>
+
+		<script>
+
+			var container;
+
+			var camera, scene, renderer;
+
+			var object;
+
+			var objs;
+
+			var mouseX = 0, mouseY = 0;
+
+			var windowHalfX = window.innerWidth / 2;
+			var windowHalfY = window.innerHeight / 2;
+
+
+			init();
+			animate();
+
+
+			function init() {
+
+				container = document.createElement( 'div' );
+				document.body.appendChild( container );
+
+				camera = new THREE.PerspectiveCamera( 50, window.innerWidth / window.innerHeight, 1, 2000 );
+				camera.position.z = 200;
+
+				// scene
+
+				scene = new THREE.Scene();
+
+				var pointLight = new THREE.PointLight( 0xffffff, 1);
+				pointLight.position.set(100, 100, 50)
+				camera.add( pointLight );
+				scene.add( camera );
+
+				{
+					let geometry = new THREE.BoxBufferGeometry( 300, 300, 100 );
+					let material = new THREE.MeshPhongMaterial( {
+						color: 0xff00000f,
+						shininess: 1,
+						specular: 0xff1111,
+						side: THREE.BackSide
+					} );
+					let mesh = new THREE.Mesh( geometry, material );
+					mesh.receiveShadow = true;
+					scene.add( mesh );
+					window.x = mesh;
+				}
+
+				var manager = new THREE.LoadingManager();
+
+				var material = new THREE.MeshStandardMaterial( {
+				    metalness: 1,
+				    roughness: .5,
+				});
+
+				var loader = new THREE.OBJLoader( manager );
+
+				const sc = 200;
+				objs = new Map();
+				const loadObj = (name, xOffset) => {
+					loader.load(`${name}.obj`, obj => {
+						objs.set(name, obj);
+						obj.traverse(child => child.material = material);
+						obj.scale.set(sc, sc, sc);
+						obj.position.x = xOffset;
+						obj.rotateX(Math.PI / 2);
+						scene.add(obj);
+					});
+				}
+
+				Object.entries({
+					'bottle': -75,
+					'church': 0,
+					'bullet': 75,
+				}).forEach(([k, o]) => loadObj(k, o));
+
+				renderer = new THREE.WebGLRenderer();
+				renderer.setPixelRatio( window.devicePixelRatio );
+				renderer.setSize( window.innerWidth, window.innerHeight );
+				container.appendChild( renderer.domElement );
+
+				document.addEventListener( 'mousemove', onDocumentMouseMove, false );
+
+				window.addEventListener( 'resize', onWindowResize, false );
+
+			}
+
+			function onDocumentMouseMove( event ) {
+				mouseX = ( event.clientX - windowHalfX ) / 2;
+				mouseY = ( event.clientY - windowHalfY ) / 2;
+			}
+
+			function onWindowResize() {
+
+				windowHalfX = window.innerWidth / 2;
+				windowHalfY = window.innerHeight / 2;
+
+				camera.aspect = window.innerWidth / window.innerHeight;
+				camera.updateProjectionMatrix();
+
+				renderer.setSize( window.innerWidth, window.innerHeight );
+
+			}
+
+			function animate() {
+
+				requestAnimationFrame( animate );
+				render();
+
+			}
+
+			function render() {
+
+				camera.position.x += ( mouseX - camera.position.x ) * .05;
+				camera.position.y += ( - mouseY - camera.position.y ) * .05;
+				if (objs) {
+					objs.forEach(i => {
+						i.rotation.z += .01;
+					});
+				}
+
+				camera.lookAt( scene.position );
+
+				renderer.render( scene, camera );
+
+			}
+
+		</script>
+
+	</body>
+</html>
